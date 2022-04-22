@@ -1,0 +1,6 @@
+#+title: Readme
+
+* README :
+
+** TODO Choses à faire [1/1]
+- [X] Faire un readme
