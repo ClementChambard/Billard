@@ -7,21 +7,34 @@
 class Texture {
 
     public:
+        /**
+         *  Constructor : loads texture from file
+         *   - filename (std::string) : the image file from which to load the texture
+         */
         Texture(std::string filename);
-        Texture(const char* filename) : Texture(std::string(filename)) {}
+        // destructor
         ~Texture();
 
+        /**
+         *  Binds the texture for drawing
+         */
         void bind();
+
+        /**
+         *  Unbinds the texture for drawing
+         */
         void unbind();
 
+        /**
+         *  Returns the size of the texture
+         *   - w (int&) : the width of the texture
+         *   - h (int&) : the height of the texture
+         */
         void getSize(int& w, int& h) { w = this->w; h = this->h; }
-
-        static void setTexUni(GLint uni_tex);
 
     private:
         GLuint texID;
         int w, h;
-        static GLint uni_tex;
 };
 
 #endif // TEXTURE_H_

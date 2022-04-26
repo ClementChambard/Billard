@@ -2,8 +2,6 @@
 
 #include <SDL2/SDL_image.h>
 
-GLint Texture::uni_tex;
-
 Texture::Texture(std::string filename)
 {
     SDL_Surface* img = IMG_Load(filename.c_str());
@@ -41,9 +39,4 @@ void Texture::bind()
 void Texture::unbind()
 {
     glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void Texture::setTexUni(GLint uni_tex)
-{
-    Texture::uni_tex = uni_tex;
 }

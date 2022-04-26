@@ -19,7 +19,6 @@
 #include "Scene.h"
 #include "Camera.h"
 #include "LensFlare.h"
-#include "FrameBuffer.h"
 
 #include "logger.h"
 
@@ -132,19 +131,33 @@ int main(int argc, char *argv[])
     sceneGraph->addPart("sun", new SceneNode(&sphere, glm::scale(glm::translate(glm::mat4(1.f),glm::vec3(0, -0.1f, 100.f)),{4,4,4})));
     sceneGraph->partSetMaterial("sun", materialSun);
 
-    Texture* texLight = new Texture("Assets/light.png");
-    Texture* texLight0 = new Texture("Assets/shape_0.png");
-    Texture* texLight1 = new Texture("Assets/shape_1.png");
-    Texture* texLight2 = new Texture("Assets/shape_2.png");
-    Texture* texLight3 = new Texture("Assets/shape_3.png");
-    Texture* texLight4 = new Texture("Assets/shape_4.png");
-    Texture* texLight5 = new Texture("Assets/shape_5.png");
-    Texture* texLight6 = new Texture("Assets/shape_6.png");
-    Texture* texLight7 = new Texture("Assets/shape_7.png");
-    Texture* texLight8 = new Texture("Assets/shape_8.png");
+    // lens flare initialization
+    Texture* texLight1 = new Texture("Assets/shape_0.png");
+    Texture* texLight2 = new Texture("Assets/shape_1.png");
+    Texture* texLight3 = new Texture("Assets/shape_2.png");
+    Texture* texLight4 = new Texture("Assets/shape_3.png");
+    Texture* texLight5 = new Texture("Assets/shape_4.png");
+    Texture* texLight6 = new Texture("Assets/shape_5.png");
+    Texture* texLight7 = new Texture("Assets/shape_6.png");
+    Texture* texLight8 = new Texture("Assets/shape_7.png");
+    Texture* texLight9 = new Texture("Assets/shape_8.png");
     LensFlare::Init();
     LensFlare::setLight(light);
-    LensFlare::setTextures({texLight, texLight0, texLight1, texLight2, texLight3, texLight4, texLight5, texLight6, texLight7, texLight8});
+    LensFlare::addTexture(texLight6, 1.f);
+    LensFlare::addTexture(texLight4, 0.46f);
+    LensFlare::addTexture(texLight2, 0.2f);
+    LensFlare::addTexture(texLight7, 0.1f);
+    LensFlare::addTexture(texLight1, 0.04f);
+    LensFlare::addTexture(texLight3, 0.12f);
+    LensFlare::addTexture(texLight9, 0.24f);
+    LensFlare::addTexture(texLight5, 0.14f);
+    LensFlare::addTexture(texLight1, 0.024f);
+    LensFlare::addTexture(texLight7, 0.4f);
+    LensFlare::addTexture(texLight9, 0.2f);
+    LensFlare::addTexture(texLight3, 0.14f);
+    LensFlare::addTexture(texLight5, 0.6f);
+    LensFlare::addTexture(texLight4, 0.8f);
+    LensFlare::addTexture(texLight8, 1.2f);
 
     // the time for animations
     float t = 0;
@@ -258,7 +271,15 @@ int main(int argc, char *argv[])
     delete materialMoon;
     delete texEarth;
     delete texMoon;
-    delete texLight;
+    delete texLight1;
+    delete texLight2;
+    delete texLight3;
+    delete texLight4;
+    delete texLight5;
+    delete texLight6;
+    delete texLight7;
+    delete texLight8;
+    delete texLight9;
     delete cam;
     delete light;
     if(context != NULL)

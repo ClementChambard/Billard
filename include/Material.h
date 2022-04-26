@@ -10,13 +10,32 @@ class Material {
 
     public:
 
-        Material(glm::vec3 color, float Ka, float Kd, float Ks, float alpha);
+        // deprecated constructor that used color instead of texture
+        //Material(glm::vec3 color, float Ka, float Kd, float Ks, float alpha);
+
+        /**
+         *  Constructor :
+         *   - tex (Texture*) : the texture of the material
+         *   - K[ads], alpha (float) : the illumination constants of the material */
         Material(Texture* tex, float Ka, float Kd, float Ks, float alpha);
 
-        static void setUniformLocations(GLint uni_K, GLint uni_alpha, GLint uni_color);
-
+        /**
+         * Used to send the uniforms and activate the texture
+         */
         void use();
+
+        /**
+         * Used to deactivate the texture
+         */
         void unuse();
+
+        /**
+         * Used to set the uniform locations used by use()
+         *  - uni_K (GLuint) : the location of the lighting constants uniform
+         *  - uni_alpha (GLuint) : the location of the alpha uniform
+         *  - uni_color (GLuint) : the location of the color uniform *deprecated*
+         */
+        static void setUniformLocations(GLint uni_K, GLint uni_alpha, GLint uni_color);
 
     private:
         glm::vec3 color = glm::vec3(1.f, 1.f, 1.f);

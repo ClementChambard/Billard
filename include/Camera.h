@@ -6,10 +6,22 @@
 class Camera {
 
     public:
+        // Basic constructor
         Camera();
 
+        /**
+         *  returns the view matrix of this camera
+         */
         glm::mat4 getMat() { return viewMat; }
 
+        /**
+         *  changes the camera position and rotation
+         *   - pitch (float) : the variation of angle between the up plane and the up axis
+         *   - yaw   (float) : the variation of angle around the up axis
+         *   - forward (float) : the variation of position along the look direction axis
+         *   - right (float) : the variation of position along the right axis
+         *   - up    (float) : the variation of position along the up axis
+         */
         void move(float pitch, float yaw, float forward, float right, float up);
 
     private:
