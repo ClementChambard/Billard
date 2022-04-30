@@ -123,7 +123,7 @@ void LensFlare::render(glm::mat4 const& proj)
         glm::vec2 posBR = offset - glm::vec2(-w/2.f,  h/2.f);
         glm::vec2 posBL = offset - glm::vec2( w/2.f,  h/2.f);
 
-        float Pos[] = {posTL.x, posTL.y, 0.999f, posBR.x, posBR.y, 0.999f, posTR.x, posTR.y, 0.999f, posTL.x, posTL.y, 0.999f, posBL.x, posBL.y, 0.999f, posBR.x, posBR.y, 0.999f};
+        float Pos[] = {posTL.x, posTL.y, lightPos.z, posBR.x, posBR.y, lightPos.z, posTR.x, posTR.y, lightPos.z, posTL.x, posTL.y, lightPos.z, posBL.x, posBL.y, lightPos.z, posBR.x, posBR.y, lightPos.z};
 
         glBindBuffer(GL_ARRAY_BUFFER, VBOid);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*6, Pos);
