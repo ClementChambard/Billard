@@ -4,13 +4,13 @@
 
 Camera::Camera()
 {
-    pos = {4,4,4};
-    lookat = glm::normalize(glm::vec3(-1,-1,-1));
+    pos = {0,4,4};
+    lookat = glm::vec3(0,0,-1);
     glm::vec3 right_vec = glm::cross(lookat, up);
     glm::vec3 up2 = glm::normalize(glm::cross(right_vec, lookat));
     viewMat = glm::lookAt(pos, pos + lookat, up2);
-    pitch = -3.141592f / 4.f;
-    yaw = 5.f * 3.141592f / 4.f;
+    pitch = 0;
+    yaw = 3.141592f;
 }
 
 void Camera::move(float pitch, float yaw, float forward, float right, float up)

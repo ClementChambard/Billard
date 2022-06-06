@@ -28,6 +28,10 @@
 #include "Cube.h"
 #include "Cone.h"
 
+#include "Texture.h"
+#include "LensFlare.h"
+#include "Camera.h"
+
 #define WIDTH     800
 #define HEIGHT    600
 #define FRAMERATE 60
@@ -44,7 +48,7 @@ struct Material {
     float alpha;
 };
 
-struct Light {
+struct Light_struct {
     glm::vec3 position;
     glm::vec3 color;
 };
@@ -62,7 +66,7 @@ struct GameObjectGraph {
     std::vector<GameObjectGraph*> children;
 };
 
-void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light& light, const glm::vec3& cameraPosition, const glm::mat4& view_projection) {
+void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light_struct& light, const glm::vec3& cameraPosition, const glm::mat4& view_projection) {
 
     matrices.push(matrices.top() * go.matrix_propagated);
 
@@ -122,7 +126,7 @@ void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light& lig
     }
     glUseProgram(0);
 
-    for (int i = 0; i < go.children.size(); i++) {
+    for (size_t i = 0; i < go.children.size(); i++) {
         draw(*(go.children[i]), matrices, light, cameraPosition, view_projection);
     }
 
@@ -132,7 +136,7 @@ void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light& lig
 SDL_Surface* textureBoule(GameObjectGraph* Boules, int num_boule_n, GLuint* textureID) {
     //Le nom du fichier de la texture correspondante à la boule n°i
     std::stringstream sstm;
-    sstm << "Images/Boule_" << num_boule_n << ".png";
+    sstm << "Assets/Boule_" << num_boule_n << ".png";
     const std::string tmp_str = sstm.str();
     const char* file_name = tmp_str.c_str();
 
@@ -216,14 +220,14 @@ int main(int argc, char* argv[])
     Cone cone(32, 0.1f);
 
     //material
-    Material verreMtl{ {1.0f, 0.9f, 0.7f}, 0.2f, 0.5f, 0.6f, 50 };
+    Material verreMtl{ {1.0f, 0.9f, 0.7f}, 1.0f, 0.0f, 0.0f, 50 };
     Material metalMtl{ {0.3f, 0.3f, 0.4f}, 0.2f, 0.2f, 0.8f, 50 };
     Material murMtl{ {1.0f, 1.0f, 1.0f}, 0.2f, 0.5f, 0.2f, 50 };
     Material solMtl{ {0.5f, 0.38f, 0.21f}, 0.2f, 0.5f, 0.2f, 50 };
     Material boisMtl{ {0.5f, 0.38f, 0.21f}, 0.2f, 0.5f, 0.2f, 50 };
     Material tableMtl{ {0.4f, 1.0f, 0.5f}, 0.2f, 0.5f, 0.0f, 50 };
     Material bouleMtl{ {1.0f, 1.0f, 1.0f}, 0.2f, 0.5f, 1.0f, 40 };
-    Light light{ {0.0f, 7.2f, -10.0f}, {1.0f, 0.9f, 0.7f} };
+    Light_struct light{ {0.0f, 8.2f, -10.0f}, {1.0f, 0.9f, 0.7f} };
 
 
     GLuint vboCube; //id
@@ -282,8 +286,8 @@ int main(int argc, char* argv[])
 
     Shader* shaderTexture = Shader::loadFromFiles(vertTexture, fragTexture);
 
-    fclose(vertColor);
-    fclose(fragColor);
+    fclose(vertTexture);
+    fclose(fragTexture);
 
     if (shaderTexture == nullptr) {
         std::cerr << "The shader 'color' did not compile correctly. Exiting." << std::endl;
@@ -626,7 +630,46 @@ int main(int argc, char* argv[])
 
 
 
+    // lens flare initialization
+    Texture* texLight1 = new Texture("Assets/shape_0.png");
+    Texture* texLight2 = new Texture("Assets/shape_1.png");
+    Texture* texLight3 = new Texture("Assets/shape_2.png");
+    Texture* texLight4 = new Texture("Assets/shape_3.png");
+    Texture* texLight5 = new Texture("Assets/shape_4.png");
+    Texture* texLight6 = new Texture("Assets/shape_5.png");
+    Texture* texLight7 = new Texture("Assets/shape_6.png");
+    Texture* texLight8 = new Texture("Assets/shape_7.png");
+    Texture* texLight9 = new Texture("Assets/shape_8.png");
+    Light main_light(light.position, light.color);
+    LensFlare::Init();
+    LensFlare::setLight(&main_light);
+    LensFlare::addTexture(texLight6, 1.f);
+    LensFlare::addTexture(texLight4, 0.46f);
+    LensFlare::addTexture(texLight2, 0.2f);
+    LensFlare::addTexture(texLight7, 0.1f);
+    LensFlare::addTexture(texLight1, 0.04f);
+    LensFlare::addTexture(texLight3, 0.12f);
+    LensFlare::addTexture(texLight9, 0.24f);
+    LensFlare::addTexture(texLight5, 0.14f);
+    LensFlare::addTexture(texLight1, 0.024f);
+    LensFlare::addTexture(texLight7, 0.4f);
+    LensFlare::addTexture(texLight9, 0.2f);
+    LensFlare::addTexture(texLight3, 0.14f);
+    LensFlare::addTexture(texLight5, 0.6f);
+    LensFlare::addTexture(texLight4, 0.8f);
+    LensFlare::addTexture(texLight8, 1.2f);
 
+
+    Camera cam;
+    bool mouseLock = false;
+    bool keyW = false;
+    bool keyA = false;
+    bool keyS = false;
+    bool keyD = false;
+    bool keyShift = false;
+    bool keySpace = false;
+    float mouseX = 0;
+    float mouseY = 0;
     //Main application loop
     float t = 0.5f;
     bool isOpened = true;
@@ -651,6 +694,35 @@ int main(int argc, char* argv[])
                     break;
                 }
                 break;
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_z: keyW = true; break;
+                    case SDLK_q: keyA = true; break;
+                    case SDLK_s: keyS = true; break;
+                    case SDLK_d: keyD = true; break;
+                    case SDLK_SPACE: keySpace = true; break;
+                    case SDLK_LSHIFT: keyShift = true; break;
+                    case SDLK_LCTRL: SDL_ShowCursor(mouseLock); mouseLock = !mouseLock; break;
+                    default: break;
+                }
+                break;
+            case SDL_KEYUP:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_z: keyW = false; break;
+                    case SDLK_q: keyA = false; break;
+                    case SDLK_s: keyS = false; break;
+                    case SDLK_d: keyD = false; break;
+                    case SDLK_SPACE: keySpace = false; break;
+                    case SDLK_LSHIFT: keyShift = false; break;
+                    default: break;
+                }
+                break;
+            case SDL_MOUSEMOTION:
+                mouseX = event.motion.x - WIDTH/2.f;
+                mouseY = -event.motion.y + HEIGHT/2.f;
+                break;
                 //We can add more event, like listening for the keyboard or the mouse. See SDL_Event documentation for more details
             }
         }
@@ -659,12 +731,24 @@ int main(int argc, char* argv[])
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 
-        glm::mat4 camera(1.0f);
-        glm::vec3 cameraPosition(0.0f, 4.0f, 6.0f);
-        camera = glm::translate(camera, cameraPosition);
+        //glm::mat4 camera(1.0f);
+        //glm::vec3 cameraPosition(0.0f, 4.0f, 6.0f);
+        //camera = glm::translate(camera, cameraPosition);
+
+        //Update the camera
+        float pitch = 0.f ,yaw = 0.f;
+        if (mouseLock)
+        {
+            yaw = -mouseX / 100;
+            pitch = mouseY / 100;
+            SDL_WarpMouseInWindow(window, WIDTH/2.f, HEIGHT/2.f);
+        }
+        cam.move(pitch, yaw, (keyW - keyS) * .08f, (keyD - keyA) * .08f, (keySpace - keyShift) * .08f);
+        main_light.setView(cam.getMat());
+
 
         glm::mat4 projection = glm::perspective(45.0f, WIDTH / (float)HEIGHT, 0.01f, 1000.0f);
-        glm::mat4 view = glm::inverse(camera); //See glm::lookAt also if you want to define the camera in other ways
+        //glm::mat4 view = glm::inverse(camera); //See glm::lookAt also if you want to define the camera in other ways
 
         Table.matrix_local = glm::mat4(1.0f);
         Table.matrix_local = glm::scale(Table.matrix_local, glm::vec3(longueurTable, hauteurTable, largeurTable));
@@ -679,8 +763,8 @@ int main(int argc, char* argv[])
         matrices.push(glm::mat4(1.0f));
 
         //APPEL A DRAW
-        draw(Sol, matrices, light, cameraPosition, projection * view);
-
+        draw(Sol, matrices, light, cam.getPos(), projection * cam.getMat());
+        LensFlare::render(projection);
 
 
         //Display on screen (swap the buffer on screen and the buffer you are drawing on)
@@ -697,8 +781,18 @@ int main(int argc, char* argv[])
     glDeleteBuffers(1, &vboCube);
     glDeleteBuffers(1, &vboSphere);
     glDeleteTextures(1, textureID);
+    LensFlare::Cleanup();
     delete shaderColor;
     delete shaderTexture;
+    delete texLight1;
+    delete texLight2;
+    delete texLight3;
+    delete texLight4;
+    delete texLight5;
+    delete texLight6;
+    delete texLight7;
+    delete texLight8;
+    delete texLight9;
 
     //Free everything
     if (context != NULL)

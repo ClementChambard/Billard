@@ -15,6 +15,11 @@ class Camera {
         glm::mat4 getMat() { return viewMat; }
 
         /**
+         *  returns the position of this camera
+         */
+        glm::vec3 getPos() { return pos; }
+
+        /**
          *  changes the camera position and rotation
          *   - pitch (float) : the variation of angle between the up plane and the up axis
          *   - yaw   (float) : the variation of angle around the up axis
