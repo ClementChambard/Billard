@@ -20,6 +20,12 @@ class Material {
         Material(Texture* tex, float Ka, float Kd, float Ks, float alpha);
 
         /**
+         *  Constructor :
+         *   - col (glm::vec3) : the color of the material
+         *   - K[ads], alpha (float) : the illumination constants of the material */
+        Material(glm::vec3 col, float Ka, float Kd, float Ks, float alpha);
+
+        /**
          * Used to send the uniforms and activate the texture
          */
         void use();
@@ -28,6 +34,31 @@ class Material {
          * Used to deactivate the texture
          */
         void unuse();
+
+        /**
+         * Returns the color of the material
+         */
+        glm::vec3 getColor() const { return color; }
+
+        /**
+         * Returns the texture of the material
+         */
+        Texture* getTexture() const { return tex; }
+
+        /**
+         * Returns the shading coefficients of the material
+         */
+        glm::vec4 getCoefs() const { return {Ka, Kd, Ks, alpha}; }
+
+        /**
+         * Sets the texture of the material to 't'
+         */
+        void setTexture(Texture* t) { tex = t; }
+
+        /**
+         * Sets the color of the material to 'c'
+         */
+        void setColor(glm::vec3 c) { color = c; }
 
         /**
          * Used to set the uniform locations used by use()

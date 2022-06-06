@@ -31,6 +31,7 @@
 #include "Texture.h"
 #include "LensFlare.h"
 #include "Camera.h"
+#include "Material.h"
 
 #define WIDTH     800
 #define HEIGHT    600
@@ -40,33 +41,18 @@
 
 #define NB_TEXTURE_BOULE 15
 
-struct Material {
-    glm::vec3 color;
-    float ka;
-    float kd;
-    float ks;
-    float alpha;
-};
-
-struct Light_struct {
-    glm::vec3 position;
-    glm::vec3 color;
-};
-
 struct GameObjectGraph {
     GLuint vboID = 0;
     Material mtl = { {1,1,1},0.2,0.2,0.2,1 };
-    bool hasTexture = false;
-    GLuint textureID = 0;
-    Geometry* geometry = NULL;
-    glm::mat4 matrix_local = glm::mat4(1.0f);           // pour repercuter la modif sur cette objet uniquement et pas ses enfants
+    unsigned int nb_vertices = 0;
+    glm::mat4 matrix_local = glm::mat4(1.0f);           // pour repercuter la modif sur cet objet uniquement et pas ses enfants
     glm::mat4 matrix_propagated = glm::mat4(1.0f);      // pour repercuter la modif sur lui et aussi ses enfants
     Shader* shader = nullptr;
 
     std::vector<GameObjectGraph*> children;
 };
 
-void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light_struct& light, const glm::vec3& cameraPosition, const glm::mat4& view_projection) {
+void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light& light, const glm::vec3& cameraPosition, const glm::mat4& view_projection) {
 
     matrices.push(matrices.top() * go.matrix_propagated);
 
@@ -80,48 +66,35 @@ void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light_stru
 
 
         //VBO
-        GLint vPosition = glGetAttribLocation(go.shader->getProgramID(), "vPosition");
-        glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(vPosition);
-
-        GLint vNormal = glGetAttribLocation(go.shader->getProgramID(), "vNormal");
-        glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, INDICE_TO_PTR(go.geometry->getNbVertices() * 3 * sizeof(float)));
-        glEnableVertexAttribArray(vNormal);
-
-        GLint vUV = glGetAttribLocation(go.shader->getProgramID(), "vUV");
-        glVertexAttribPointer(vUV, 2, GL_FLOAT, GL_FALSE, 0, INDICE_TO_PTR(go.geometry->getNbVertices() * (3 + 3) * sizeof(float)));
-        glEnableVertexAttribArray(vUV);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, INDICE_TO_PTR(go.nb_vertices * (3 + 3) * sizeof(float)));
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, INDICE_TO_PTR(go.nb_vertices * 3 * sizeof(float)));
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
 
 
         //Uniform for vertex shader
-        GLint uMVP = glGetUniformLocation(go.shader->getProgramID(), "uMVP");
-        GLint uModel = glGetUniformLocation(go.shader->getProgramID(), "uModel");
+        GLint uMVP         = glGetUniformLocation(go.shader->getProgramID(), "uMVP");
+        GLint uModel       = glGetUniformLocation(go.shader->getProgramID(), "uModel");
         GLint uInvModel3x3 = glGetUniformLocation(go.shader->getProgramID(), "uInvModel3x3");
-        glUniformMatrix4fv(uMVP, 1, GL_FALSE, glm::value_ptr(mvp));
-        glUniformMatrix4fv(uModel, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(uMVP,         1, GL_FALSE, glm::value_ptr(mvp        ));
+        glUniformMatrix4fv(uModel,       1, GL_FALSE, glm::value_ptr(model      ));
         glUniformMatrix3fv(uInvModel3x3, 1, GL_FALSE, glm::value_ptr(invModel3x3));
 
-        GLint uMtlColor = glGetUniformLocation(go.shader->getProgramID(), "uMtlColor");
-        GLint uTexture = glGetUniformLocation(go.shader->getProgramID(), "uTexture");
-
-        GLint uMtlCts = glGetUniformLocation(go.shader->getProgramID(), "uMtlCts");
-        GLint uLightPos = glGetUniformLocation(go.shader->getProgramID(), "uLightPos");
-        GLint uLightColor = glGetUniformLocation(go.shader->getProgramID(), "uLightColor");
+        GLint uMtlColor       = glGetUniformLocation(go.shader->getProgramID(), "uMtlColor"      );
+        GLint uMtlCts         = glGetUniformLocation(go.shader->getProgramID(), "uMtlCts"        );
+        GLint uLightPos       = glGetUniformLocation(go.shader->getProgramID(), "uLightPos"      );
+        GLint uLightColor     = glGetUniformLocation(go.shader->getProgramID(), "uLightColor"    );
         GLint uCameraPosition = glGetUniformLocation(go.shader->getProgramID(), "uCameraPosition");
-        glUniform3fv(uMtlColor, 1, glm::value_ptr(go.mtl.color));
-        glUniform4f(uMtlCts, go.mtl.ka, go.mtl.kd, go.mtl.ks, go.mtl.alpha);
-        glUniform3fv(uLightPos, 1, glm::value_ptr(light.position));
-        glUniform3fv(uLightColor, 1, glm::value_ptr(light.color));
-        glUniform3fv(uCameraPosition, 1, glm::value_ptr(cameraPosition));
+        glUniform3fv(uMtlColor,       1, glm::value_ptr(go.mtl.getColor  ()));
+        glUniform4fv(uMtlCts,         1, glm::value_ptr(go.mtl.getCoefs  ()));
+        glUniform3fv(uLightPos,       1, glm::value_ptr(light.getPosition()));
+        glUniform3fv(uLightColor,     1, glm::value_ptr(light.getColor   ()));
+        glUniform3fv(uCameraPosition, 1, glm::value_ptr(cameraPosition     ));
 
-        if (go.hasTexture) {
-            //Parameterize the texture
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, go.textureID);
-            glUniform1i(uTexture, 0);
-        }
-        glDrawArrays(GL_TRIANGLES, 0, go.geometry->getNbVertices());
-
+        if (go.mtl.getTexture() != nullptr) go.mtl.getTexture()->bind();
+        glDrawArrays(GL_TRIANGLES, 0, go.nb_vertices);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glUseProgram(0);
@@ -132,41 +105,6 @@ void draw(GameObjectGraph& go, std::stack<glm::mat4>& matrices, const Light_stru
 
     matrices.pop();
 };
-
-SDL_Surface* textureBoule(GameObjectGraph* Boules, int num_boule_n, GLuint* textureID) {
-    //Le nom du fichier de la texture correspondante à la boule n°i
-    std::stringstream sstm;
-    sstm << "Assets/Boule_" << num_boule_n << ".png";
-    const std::string tmp_str = sstm.str();
-    const char* file_name = tmp_str.c_str();
-
-    //Load the file (png)
-    SDL_Surface* img = IMG_Load(file_name);
-    SDL_Surface* rgbImg = SDL_ConvertSurfaceFormat(img, SDL_PIXELFORMAT_RGBA32, 0);
-    SDL_FreeSurface(img);
-
-    glGenTextures(NB_TEXTURE_BOULE, textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID[num_boule_n]);
-    {
-        //All the following parameters are default parameters. Sampler (using glGenSampler,see documentation) can override them.For this course, these values are enough
-        //Bilinear filtering is enough when the texture is "far" (min_filter : you have to mignify the texture) and "close" (mag_filter : you have to magnify the texture)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        //Repeat the texture if needed. Texture coordinates go from (0.0, 0.0) (bottom-left) to(1.0, 1.0) (top - right).If repeat, (2.0, 2.0) is equivalent to(1.0, 1.0), see figure 1
-        //S is "x coordinate" and T "y coordinate"
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        //Send the data. Here you have to pay attention to what is the format of the sending data(GL_RGBA) and the internal data of the texture(GL_RGBA8).We are creating a 2D texture, but 3D textures exist as well.
-        //We set the width, the height and the pixels data of this texture (we know here that pixels are GL_RGBA because we have convert the image read from SDL above)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, rgbImg->w, rgbImg->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)rgbImg->pixels);
-        //Generate mipmap. See figure 2 for mipmap description
-        //Optional but recommended
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    glBindTexture(GL_TEXTURE_2D, num_boule_n);
-
-    return rgbImg;
-}
 
 int main(int argc, char* argv[])
 {
@@ -227,7 +165,7 @@ int main(int argc, char* argv[])
     Material boisMtl{ {0.5f, 0.38f, 0.21f}, 0.2f, 0.5f, 0.2f, 50 };
     Material tableMtl{ {0.4f, 1.0f, 0.5f}, 0.2f, 0.5f, 0.0f, 50 };
     Material bouleMtl{ {1.0f, 1.0f, 1.0f}, 0.2f, 0.5f, 1.0f, 40 };
-    Light_struct light{ {0.0f, 8.2f, -10.0f}, {1.0f, 0.9f, 0.7f} };
+    Light light({0.0f, 8.2f, -10.0f}, {1.0f, 0.9f, 0.7f});
 
 
     GLuint vboCube; //id
@@ -261,38 +199,26 @@ int main(int argc, char* argv[])
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    const char* vertPathColor = "Shaders/colorLight.vert";
-    const char* fragPathColor = "Shaders/colorLight.frag";
+    const char* vertPath = "Shaders/shading.vert";
+    const char* fragPath = "Shaders/shading.frag";
 
-    FILE* vertColor = fopen(vertPathColor, "r");
-    FILE* fragColor = fopen(fragPathColor, "r");
+    FILE* vertFile = fopen(vertPath, "r");
+    FILE* fragFile = fopen(fragPath, "r");
 
-    Shader* shaderColor = Shader::loadFromFiles(vertColor, fragColor);
+    Shader* shader = Shader::loadFromFiles(vertFile, fragFile);
 
-    fclose(vertColor);
-    fclose(fragColor);
+    fclose(vertFile);
+    fclose(fragFile);
 
-    if (shaderColor == nullptr) {
+    if (shader == nullptr) {
         std::cerr << "The shader 'color' did not compile correctly. Exiting." << std::endl;
         return EXIT_FAILURE;
     }
 
-
-    const char* vertPathTexture = "Shaders/textureLight.vert";
-    const char* fragPathTexture = "Shaders/textureLight.frag";
-
-    FILE* vertTexture = fopen(vertPathTexture, "r");
-    FILE* fragTexture = fopen(fragPathTexture, "r");
-
-    Shader* shaderTexture = Shader::loadFromFiles(vertTexture, fragTexture);
-
-    fclose(vertTexture);
-    fclose(fragTexture);
-
-    if (shaderTexture == nullptr) {
-        std::cerr << "The shader 'color' did not compile correctly. Exiting." << std::endl;
-        return EXIT_FAILURE;
-    }
+    glUseProgram(shader->getProgramID()); {
+        GLint uTexture = glGetUniformLocation(shader->getProgramID(), "uTexture");
+        glUniform1i(uTexture, 0);
+    } glUseProgram(0);
 
     float coteSolPlafondMur = 20.0f;
     float epaisseurSolplafondMur = 0.5f;
@@ -321,7 +247,6 @@ int main(int argc, char* argv[])
     GameObjectGraph Mur1;
     GameObjectGraph Mur2;
     GameObjectGraph Mur3;
-    GameObjectGraph Mur4;
     GameObjectGraph Sol;
     GameObjectGraph Plafond;
     GameObjectGraph TigeLampe;
@@ -342,7 +267,6 @@ int main(int argc, char* argv[])
     Sol.children.push_back(&Mur1);
     Sol.children.push_back(&Mur2);
     Sol.children.push_back(&Mur3);
-    Sol.children.push_back(&Mur4);
     Sol.children.push_back(&Plafond);
 
     Plafond.children.push_back(&TigeLampe);
@@ -359,35 +283,33 @@ int main(int argc, char* argv[])
     Table.children.push_back(&BordL1);
     Table.children.push_back(&BordL2);
 
-    Sol.geometry = &cube;
-    Mur1.geometry = &cube;
-    Mur2.geometry = &cube;
-    Mur3.geometry = &cube;
-    Mur4.geometry = &cube;
-    Plafond.geometry = &cube;
+    Sol.nb_vertices = cube.getNbVertices();
+    Mur1.nb_vertices = cube.getNbVertices();
+    Mur2.nb_vertices = cube.getNbVertices();
+    Mur3.nb_vertices = cube.getNbVertices();
+    Plafond.nb_vertices = cube.getNbVertices();
 
-    TigeLampe.geometry = &cube;
-    BaseLampe.geometry = &cone;
-    Ampoule.geometry = &sphere;
+    TigeLampe.nb_vertices = cube.getNbVertices();
+    BaseLampe.nb_vertices = cone.getNbVertices();
+    Ampoule.nb_vertices = sphere.getNbVertices();
 
 
-    Table.geometry = &cube;
+    Table.nb_vertices = cube.getNbVertices();
 
-    Pied1.geometry = &cube;
-    Pied2.geometry = &cube;
-    Pied3.geometry = &cube;
-    Pied4.geometry = &cube;
+    Pied1.nb_vertices = cube.getNbVertices();
+    Pied2.nb_vertices = cube.getNbVertices();
+    Pied3.nb_vertices = cube.getNbVertices();
+    Pied4.nb_vertices = cube.getNbVertices();
 
-    BordC1.geometry = &cube;
-    BordC2.geometry = &cube;
-    BordL1.geometry = &cube;
-    BordL2.geometry = &cube;
+    BordC1.nb_vertices = cube.getNbVertices();
+    BordC2.nb_vertices = cube.getNbVertices();
+    BordL1.nb_vertices = cube.getNbVertices();
+    BordL2.nb_vertices = cube.getNbVertices();
 
     Sol.vboID = vboCube;
     Mur1.vboID = vboCube;
     Mur2.vboID = vboCube;
     Mur3.vboID = vboCube;
-    Mur4.vboID = vboCube;
     Plafond.vboID = vboCube;
 
     TigeLampe.vboID = vboCube;
@@ -411,7 +333,6 @@ int main(int argc, char* argv[])
     Mur1.mtl = murMtl;
     Mur2.mtl = murMtl;
     Mur3.mtl = murMtl;
-    Mur4.mtl = murMtl;
     Plafond.mtl = murMtl;
 
     TigeLampe.mtl = metalMtl;
@@ -430,28 +351,27 @@ int main(int argc, char* argv[])
     BordL1.mtl = boisMtl;
     BordL2.mtl = boisMtl;
 
-    Sol.shader = shaderColor;
-    Mur1.shader = shaderColor;
-    Mur2.shader = shaderColor;
-    Mur3.shader = shaderColor;
-    Mur4.shader = shaderColor;
-    Plafond.shader = shaderColor;
+    Sol.shader = shader;
+    Mur1.shader = shader;
+    Mur2.shader = shader;
+    Mur3.shader = shader;
+    Plafond.shader = shader;
 
-    TigeLampe.shader = shaderColor;
-    BaseLampe.shader = shaderColor;
-    Ampoule.shader = shaderColor;
+    TigeLampe.shader = shader;
+    BaseLampe.shader = shader;
+    Ampoule.shader = shader;
 
-    Table.shader = shaderColor;
+    Table.shader = shader;
 
-    Pied1.shader = shaderColor;
-    Pied2.shader = shaderColor;
-    Pied3.shader = shaderColor;
-    Pied4.shader = shaderColor;
+    Pied1.shader = shader;
+    Pied2.shader = shader;
+    Pied3.shader = shader;
+    Pied4.shader = shader;
 
-    BordC1.shader = shaderColor;
-    BordC2.shader = shaderColor;
-    BordL1.shader = shaderColor;
-    BordL2.shader = shaderColor;
+    BordC1.shader = shader;
+    BordC2.shader = shader;
+    BordL1.shader = shader;
+    BordL2.shader = shader;
 
     Sol.matrix_local = glm::mat4(1.0f);
     Sol.matrix_local = glm::scale(Sol.matrix_local, glm::vec3(coteSolPlafondMur, epaisseurSolplafondMur, coteSolPlafondMur));
@@ -478,11 +398,6 @@ int main(int argc, char* argv[])
     Mur3.matrix_propagated = glm::mat4(1.0f);
     Mur3.matrix_propagated = glm::translate(Mur3.matrix_propagated, glm::vec3(0.5f * coteSolPlafondMur - 0.5f * epaisseurSolplafondMur, - 0.5f * epaisseurSolplafondMur + 0.5f*hauteurMur, 0.0f));
 
-    Mur4.matrix_local = glm::mat4(1.0f);
-    //Mur4.matrix_local = glm::scale(Mur2.matrix_local, glm::vec3(coteSolPlafondMur, hauteurMur, epaisseurSolplafondMur));
-    Mur4.matrix_propagated = glm::mat4(1.0f);
-    //Mur4.matrix_propagated = glm::translate(Mur2.matrix_propagated, glm::vec3(0.0f, -0.5f * epaisseurSolplafondMur + 0.5f * hauteurMur, 0.5f * coteSolPlafondMur - 0.5f * epaisseurSolplafondMur));
-
     TigeLampe.matrix_local = glm::mat4(1.0f);
     TigeLampe.matrix_local = glm::scale(TigeLampe.matrix_local, glm::vec3(coteTige, hauteurTige, coteTige));
     TigeLampe.matrix_propagated = glm::mat4(1.0f);
@@ -495,9 +410,9 @@ int main(int argc, char* argv[])
     BaseLampe.matrix_propagated = glm::translate(BaseLampe.matrix_propagated, glm::vec3(0.0f,- 0.5f * hauteurTige - 0.5f, 0.0f));
 
     Ampoule.matrix_local = glm::mat4(1.0f);
-    //Ampoule.matrix_local = glm::scale(Mur4.matrix_local, glm::vec3(0.8f, 0.8f, 0.8f));
+    //Ampoule.matrix_local = glm::scale(Ampoule.matrix_local, glm::vec3(0.8f, 0.8f, 0.8f));
     Ampoule.matrix_propagated = glm::mat4(1.0f);
-    Ampoule.matrix_propagated = glm::translate(Mur4.matrix_propagated, glm::vec3(0.0f, -0.5f, 0.0f));
+    Ampoule.matrix_propagated = glm::translate(Ampoule.matrix_propagated, glm::vec3(0.0f, -0.5f, 0.0f));
 
     Pied1.matrix_local = glm::mat4(1.0f);
     Pied1.matrix_propagated = glm::mat4(1.0f);
@@ -521,7 +436,7 @@ int main(int argc, char* argv[])
 
     BordC1.matrix_local = glm::mat4(1.0f);
     BordC1.matrix_propagated = glm::mat4(1.0f);
-    BordC1.matrix_propagated = glm::translate(BordC1.matrix_propagated, glm::vec3(-0.5f * longueurTable - 0.5f * longueurBordC, 0.0f, 0.0f)); //vérif
+    BordC1.matrix_propagated = glm::translate(BordC1.matrix_propagated, glm::vec3(-0.5f * longueurTable - 0.5f * longueurBordC, 0.0f, 0.0f));
     BordC1.matrix_propagated = glm::scale(BordC1.matrix_propagated, glm::vec3(longueurBordC, hauteurBord, largeurBordC));
 
     BordC2.matrix_local = glm::mat4(1.0f);
@@ -552,15 +467,11 @@ int main(int argc, char* argv[])
 
     int ordre_boules[NB_TEXTURE_BOULE] = { 9, 12, 7, 1, 8, 15, 14, 3, 10, 6, 5, 4, 13, 2, 11 };
 
-    GLuint textureID[NB_TEXTURE_BOULE];
-    SDL_Surface* rgbImg;
-
     //La boule blanche n'a pas de texture et n'est pas dans le triangle
-    Boules[0].geometry = &sphere;
+    Boules[0].nb_vertices = sphere.getNbVertices();
     Boules[0].mtl = bouleMtl;
     Boules[0].vboID = vboSphere;
-    Boules[0].hasTexture = false;
-    Boules[0].shader = shaderColor;
+    Boules[0].shader = shader;
 
     Boules[0].matrix_local = glm::mat4(1.0f);
     Boules[0].matrix_propagated = glm::mat4(1.0f);
@@ -585,11 +496,8 @@ int main(int argc, char* argv[])
 
             float y = y_min + distBoules * j;
 
-            //Attribution de la texture
-            rgbImg = textureBoule(Boules, num_boule_n, textureID);
-
             //Propriétés de la boule
-            Boules[num_boule_n].geometry = &sphere;
+            Boules[num_boule_n].nb_vertices = sphere.getNbVertices();
             Boules[num_boule_n].mtl = bouleMtl;
             Boules[num_boule_n].vboID = vboSphere;
 
@@ -618,9 +526,9 @@ int main(int argc, char* argv[])
             Boules[num_boule_n].matrix_local = glm::scale(Boules[num_boule_n].matrix_local, glm::vec3(scaleBoules, scaleBoules, scaleBoules));
 
 
-            Boules[num_boule_n].textureID = textureID[num_boule_n]; //Donner la texture à la Boule numéro i
-            Boules[num_boule_n].hasTexture = true;
-            Boules[num_boule_n].shader = shaderTexture;
+            Boules[num_boule_n].mtl.setColor({0,0,0});
+            Boules[num_boule_n].mtl.setTexture(new Texture("Assets/Boule_" + std::to_string(num_boule_n) + ".png")); //Donner la texture à la Boule
+            Boules[num_boule_n].shader = shader;
 
             boule_n++;
         }
@@ -640,9 +548,8 @@ int main(int argc, char* argv[])
     Texture* texLight7 = new Texture("Assets/shape_6.png");
     Texture* texLight8 = new Texture("Assets/shape_7.png");
     Texture* texLight9 = new Texture("Assets/shape_8.png");
-    Light main_light(light.position, light.color);
     LensFlare::Init();
-    LensFlare::setLight(&main_light);
+    LensFlare::setLight(&light);
     LensFlare::addTexture(texLight6, 1.f);
     LensFlare::addTexture(texLight4, 0.46f);
     LensFlare::addTexture(texLight2, 0.2f);
@@ -731,10 +638,6 @@ int main(int argc, char* argv[])
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 
-        //glm::mat4 camera(1.0f);
-        //glm::vec3 cameraPosition(0.0f, 4.0f, 6.0f);
-        //camera = glm::translate(camera, cameraPosition);
-
         //Update the camera
         float pitch = 0.f ,yaw = 0.f;
         if (mouseLock)
@@ -744,11 +647,10 @@ int main(int argc, char* argv[])
             SDL_WarpMouseInWindow(window, WIDTH/2.f, HEIGHT/2.f);
         }
         cam.move(pitch, yaw, (keyW - keyS) * .08f, (keyD - keyA) * .08f, (keySpace - keyShift) * .08f);
-        main_light.setView(cam.getMat());
+        light.setView(cam.getMat());
 
 
         glm::mat4 projection = glm::perspective(45.0f, WIDTH / (float)HEIGHT, 0.01f, 1000.0f);
-        //glm::mat4 view = glm::inverse(camera); //See glm::lookAt also if you want to define the camera in other ways
 
         Table.matrix_local = glm::mat4(1.0f);
         Table.matrix_local = glm::scale(Table.matrix_local, glm::vec3(longueurTable, hauteurTable, largeurTable));
@@ -779,11 +681,14 @@ int main(int argc, char* argv[])
     }
 
     glDeleteBuffers(1, &vboCube);
+    glDeleteBuffers(1, &vboCone);
     glDeleteBuffers(1, &vboSphere);
-    glDeleteTextures(1, textureID);
+    for (int i = 0; i < 16; i++)
+    {
+        if (Boules[i].mtl.getTexture() != nullptr) delete Boules[i].mtl.getTexture();
+    }
     LensFlare::Cleanup();
-    delete shaderColor;
-    delete shaderTexture;
+    delete shader;
     delete texLight1;
     delete texLight2;
     delete texLight3;
@@ -799,8 +704,6 @@ int main(int argc, char* argv[])
         SDL_GL_DeleteContext(context);
     if (window != NULL)
         SDL_DestroyWindow(window);
-
-    SDL_FreeSurface(rgbImg);
 
     return 0;
 }

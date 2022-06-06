@@ -4,7 +4,6 @@ GLint Material::uni_K;
 GLint Material::uni_alpha;
 GLint Material::uni_color;
 
-/* // DEPRECATED
 Material::Material(glm::vec3 color, float Ka, float Kd, float Ks, float alpha)
 {
     this->color = color;
@@ -13,7 +12,6 @@ Material::Material(glm::vec3 color, float Ka, float Kd, float Ks, float alpha)
     this->Ks = Ks;
     this->alpha = alpha;
 }
-*/
 
 Material::Material(Texture* tex, float Ka, float Kd, float Ks, float alpha)
 {

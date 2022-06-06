@@ -26,6 +26,16 @@ class Light {
         void setView(glm::mat4 const& v);
 
         /**
+         *  Returns the color of the light
+         */
+        glm::vec3 getColor() const { return color; }
+
+        /**
+         *  Returns the position of the light
+         */
+        glm::vec3 getPosition() const { return position; }
+
+        /**
          *  Returns the camera space position of the light
          */
         glm::vec3 getCamSpacePos() const { return camSpacePosition; }

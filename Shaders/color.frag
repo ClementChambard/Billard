@@ -18,7 +18,7 @@ uniform sampler2D uTex;
 
 void main()
 {
-    vec3 matCol = texture(uTex, varyUVs).xyz * uMatCol;
+    vec3 matCol = texture(uTex, varyUVs).xyz + uMatCol;
     vec3 Ambiant = uMatK.x * matCol * uLigCol;
     vec3 ligDir = normalize(varyCamSpacePos - uLigPos);
     vec3 Diffuse = uMatK.y * max(0, dot(varyNormal, -ligDir)) * matCol * uLigCol;
