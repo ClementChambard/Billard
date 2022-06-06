@@ -9,7 +9,3 @@
   - lctrl : lock/unlock the mouse
 - when mouse is locked:
   - move the mouse: change the view angle
-
-* Project:
-** TODO Choses à faire [1/1]
-- [X] Faire un readme
